@@ -265,13 +265,391 @@
 // })();
 
 //****************************************************************************************************** */
-//3.6 파일 시스템 접근하기
+//fs 파일 시스템 접근할 수 있는 메서드
+//일반 JS에서는 파일 다운과 파일 시스템 접근이 금지 되어있었다.
+// const fs = require('fs');
 
+//파일 읽기 readFile(위치,(에러와 데이터 콜백))
+// fs.readFile('./nodeJsFs/readme.txt', (err, data) =>
+// {
+//     if(err){
+//         throw err;
+//     }
+//     console.log(data); //buff
+//     console.log(data.toString()); //텍스트 변환
+// });
 
+//파일 쓰고 읽기
+//writeFile(위치,내용,(에러콜백))
+// fs.writeFile('./nodeJsFs/writeme.txt', '글이 됩니다.',(err) =>{ //'위치', '내용', err콜백함수
+//     if(err){
+//         throw err;
+//     }
+//     fs.readFile('./nodeJsFs/writeme.txt', (err, data)=>{ //'위치', (err, data) 콜백함수
+//         if(err){
+//             throw err;
+//         }
+//         console.log(data.toString()); //글을 버퍼형태가 아닌 문자로 출력
+//     });
+// });
 
+//동기 방식으로 readFile 메서드 실행하려면
+// console.log('읽기 시작')
+// fs.readFile('./nodeJsFs/writeme.txt', (err, data) =>
+// {
+//     if(err){
+//         throw err;
+//     }
+//     console.log('1번', data.toString());
+// });
+// fs.readFile('./nodeJsFs/writeme.txt', (err, data) =>
+// {
+//     if(err){
+//         throw err;
+//     }
+//     console.log('2번', data.toString());
+// });
+// fs.readFile('./nodeJsFs/writeme.txt', (err, data) =>
+// {
+//     if(err){
+//         throw err;
+//     }
+//     console.log('3번', data.toString());
+// });
+// console.log('끝'); //시작- 끝- 무작위 순으로 실행됨
+
+//순서대로 실행할 떄에는 콜백사용 불가(콜백은 비동기이다.)
+//readFileSync 를 지원한다. /비동기는 콜백을 타고 들어간다 
+//실제로는 비동기방식을 많이쓴다./블로킹이므로..
+//파일하나때문에 오래 걸리면 안되기 때문이다.
+//fs promise로 콜백헬을 탈출 할 수 있다.
+// console.log('읽기 시작');
+// fs.readFileSync('./nodeJsFs/writeme.txt');
+// console.log('1번');
+// fs.readFileSync('./nodeJsFs/writeme.txt');
+// console.log('2번');
+// fs.readFileSync('./nodeJsFs/writeme.txt');
+// console.log('3번');
+// console.log('끝'); //시작 - 1-2-3 - 끝 순으로 실행됨
+//****************************************************************************************************** */
+//버퍼와 스트림
+
+// const fs = require('fs');
+
+// const readStream = fs.createReadStream('./nodeJsFs/readme.txt', {highWaterMark: 16});
+// const data = [];
+
+// readStream.on('data', (chunk) =>{ //쌓인 버퍼는 chunk로 받는다
+//     data.push(chunk); //배열에 받은 것들을 넣는다.
+//     console.log('data : ',chunk, chunk.length); //발생 이벤트
+// });
+
+// readStream.on('end', ()=>{
+//     console.log('end : ', Buffer.concat(data).toString()); //종료 이벤트
+// });
+
+// readStream.on('error', (err)=>{ //에러 이벤트
+//     console.log(err);
+// });
+
+/*********** */
+// const fs = require('fs');
+//스트리밍으로 파일쓰기
+// const writeStream = fs.createWriteStream('./nodeJsFs/writeStream.txt');
+
+// writeStream.on('finish', ()=>{
+//     console.log('파일 쓰기 완료'); //이벤트를 붙임
+// });
+
+// //내용 작성
+// writeStream.write('이 글을 씁니다\n');
+// writeStream.write('스트리밍으로'); //쓰고싶은만큼
+// writeStream.end();//종료를 알린다.
+
+// fs.readFile('./nodeJsFs/writeStream.txt', (err, data)=>
+// {
+//     if(err){
+//         throw err;
+//     }
+//     console.log(data.toString());
+// });
+
+/************/
+//스트림 기능 중 파이프 기능이 있다.
+//스트림간에 이어지는 중간 파이프 : 흘러가듯이
+//읽고 - 쓰고는 즉 노드에서 복사하는 기능이다.
+// const fs = require('fs');
+
+// const readStream = fs.createReadStream('./nodeJsFs/writeStream.txt');
+// const writeStream = fs.createWriteStream('./nodeJsFs/writeStream2.txt');
+// readStream.pipe(writeStream);//복사할 내용.pipe(붙여넣을 파일)
+
+//**************** */
+//새로운 방법 copyFile
+// const fs = require('fs');
+
+// const readStream = fs.copyFile('./nodeJsFs/writeStream.txt','./nodeJsFs/writeStream3.txt', (err)=>{
+    //     console.log(err);
+    // });
+    
+//**************** */
+//폴더 생성 - 파일생성 - 작성 - 파일명 수정 / 콜백헬 주의
+
+// const fs = require('fs');
+
+// fs.access('./foder', fs.constants.F_OK | fs.constants.R_OK | fs.constants.W_OK, (err)=>{
+// //확인 메서드  , 파일일 있는지 ,읽을 권한이있는지, 쓸권한이있는지?
+//     if(err){
+//         if(err.code === 'ENOENT'){
+//             console.log('폴더없음');
+//             fs.mkdir('./forder', (err)=>{
+//                 console.log(err);
+//             })
+//             console.log('폴더 만들기 성공');
+//             fs.open('./forder/file.js', 'w', (err, fd) =>{
+//                 if(err){
+//                     throw err;
+//                 }
+//                 console.log('빈파일 만들기 성공', fd);
+//                 fs.rename('./forder/file.js', './forder/newfile.js', (err) =>{
+//                     if(err){
+//                         throw err;
+//                     }
+//                     console.log('파일명 바꾸기 성공')
+//                 })
+//             })
+//         }
+//     }
+//     else console.log('이미폴더있음');
+// });
+
+//폴더에 뭐가 있는지 확인하고 fs.readdir, 폴더 fs.rmdir , 파일 삭제 fs.unlink
+// const fs = require('fs');
+
+// fs.readdir('./forder', (err, dir)=>{
+//     if(err){
+//         throw err;
+//     }
+//     console.log('폴더내용 확인', dir);
+//     fs.unlink('./forder/newfile.js', (err)=>{
+//         if(err){
+//             throw err;
+//         }
+//         console.log('파일 삭제 성공');
+//         fs.rmdir('./forder', (err)=>{
+//             if(err){
+//                 throw err;
+//             }
+//             console.log('폴더삭제성공');
+//         });
+//     });
+// });
+
+//이벤트 리스너 addListener(on), emit, once, removeAllListener, removeListener, listenerCount
+//이벤트 발생조건을 설정
+// (이벤트 동작 내용 설정 (callback));
+//emit / remove
+
+// const EventEmitter = require('events');
+
+// const mtEvent = new EventEmitter();
+// mtEvent.addListener('방문', ()=>{
+//     console.log('안녕하세요');
+// });
+
+// mtEvent.on('방문',()=>{
+//     console.log('또왔네요')
+// });
+
+// mtEvent.on('클릭',()=>{
+//     console.log('누렀네요');
+// });
+
+// mtEvent.emit('방문');
+// mtEvent.emit('클릭');
+
+// mtEvent.removeAllListeners('방문');
+// mtEvent.emit('방문');
+
+// const meE1 = () =>{
+//     console.log('안되');
+// };
+// mtEvent.on('안되', meE1);
+// mtEvent.removeListener('안되', meE1); //편하게 .off(이벤트명,callback) 사용가능
+// mtEvent.emit('안되');
+
+// console.log(mtEvent.listenerCount('방문')); //지정한 이벤트의 갯수
+// mtEvent.once('나가기',()=>{
+//     console.log('가지마오');
+// });
+
+// mtEvent.emit('나가기');
+// mtEvent.emit('나가기');
+// mtEvent.emit('나가기'); //once로 이벤트 선언되었으므로 1번만 출력됨
+//****************************************************************************************************** */
+//예외처리 try~catch 로 잡거나 
+//process.on('uncaughtException', (err)=>{ console.log('알지못하는 애러')});
+//단 100% 처리가 아니다, 기록만 되며, 진행을 할 수 있을 뿐이다.
+
+//*********** */
+// const fs = require('fs');
+//*********** */
+// //seetInterval + try~catch
+// setInterval(()=>{
+// console.log('시작');
+// try{
+//     throw new Error('서버를 고장내주마')
+// }
+// catch(err){
+//     console.log(err);
+// }
+// console.log('종료가 되야한다.')
+// },2000)
+
+//*********** */
+//setInterval로 멈추기 전까지 계속 실행시킬수있도록 예외할 수 있다.
+
+// setInterval( () =>{
+//     fs.unlink('./fordor.js', (err) => {
+//         console.log(err)
+//     });
+// }, 1000);
+
+//*********** */
+// process.on('uncaughtException', (err) =>{ //에러발생시 .on 이벤트로 잡아서 계속 돌린다
+//     console.err('예기치 못한 에러', err);
+// });
+
+// setInterval( () =>{//계속 에러가 실행이된다.
+//     fs.unlink('./fordor.js', (err) => {
+//         console.log(err)
+//     });
+// }, 1000);
+
+// setTimeout(()=>{ //실행된다
+//     console.log('되니?')
+// }, 2000);
 //****************************************************************************************************** */
 //****************************************************************************************************** */
 //****************************************************************************************************** */
+//4장 HTTP 모듈을 통해 서버실행
+//****************************************************************************************************** */
+//****************************************************************************************************** */
+//****************************************************************************************************** */
+//서버실행
+// const http = require('http');
+// const fs = require('fs');
+
+// //이벤트리스너와 비슷하게 생각하자
+// //대신 '방문'이라는 이벤트가 이미 써있기때문에 콜백만 사용
+// http.createServer((req, res) =>{ //req 리퀘스트로 요청, 요청자 등 정보 받은걸 검사하여 거절할수도있다 /분산해서 보내면 '디도스'이다
+//                                    //응답의 정보를 res 리스폰스 로 결과를 응답해준다.
+//     console.log('서버실행');
+//     res.write('<h1>Hello NodeJs!</h1>') //보내고 싶은내용
+//     res.write('<h2>Hello Js~</h2>') //보내고 싶은내용
+
+//     fs.readFile('./nodeJsFs/index.html', (err, data)=>{
+//         if(err){
+//             throw err;
+//         }
+//         res.end(data) //응답이 끝났다는 것을 알려줘야한다.
+//     });
+// }).listen(8080,()=>{ //들어올 포트를 입력해줘야 한다. /http(기본 80) /https(기본 443) 는 숨겨있다. /기본은 생략가능 아니면 :81 :444 이렇게 붙여야한다.
+//                     //하나의 도메인에 포트번호만 수정하여 페이지를 더욱 다양하게 활용가능하다.
+//     console.log('8080포트로 시작합니다.'); //코딩할때 8080을 많이 쓴다./배포는 80
+//*********************************************************************** */
+//이벤트 리스너를 달아줄 수 있다
+// const http = require('http'); //서버사용 모듈
+// const fs = require('fs'); //파일 사용 모듈
+
+// //이벤트리스너와 비슷하게 생각하자
+// const myServer = http.createServer((req, res) =>{ 
+//     console.log('서버실행');
+//     res.write('<h1>Hello NodeJs!</h1>') //보내고 싶은내용
+//     res.write('<h2>Hello Js~</h2>') //보내고 싶은내용
+
+//     fs.readFile('./nodeJsFs/index.html', (err, data)=>{
+//         if(err){
+//             throw err;
+//         }
+//         res.end(data)  //누가 요청을 보내고 누가 응답을 하냐에 따라서 유동적으로 바뀐다 / axios로 타사이트 api 접근시, 내서버가 클라이언트가 된다.
+//         //버퍼 자체를 보내도된다. 브라우져에서 자동처리한다.
+//         //노드서버의 역할은 내용을 브라우져에 보내는것까지이다.
+//     });
+// }).listen(8080) //자체로 이벤트 구조이므로
+
+// myServer.on('listening', ()=>{ //변수에 할당하여 이벤트를 붙일 수 있다.
+//     console.log('8080포트로 시작합니다.'); //코딩할때 8080을 많이 쓴다./배포는 80
+// });
+
+// myServer.on('error', (error)=>{
+//     console.error(error);
+// }); //동일하게 나온다
+//*********************************************************************** */
+//쿠키 활용
+
+// const http = require('http');
+// const fs = require('fs');
+// const url = require('url');
+// const qs = require('querystring');
+
+// //파스할 쿠키 값 /코드는 나중에 확인 지금은 복붙(180807ㄴ)
+// const parseCookies = (cookie = '')=>
+// cookie
+// .split(';')
+// .map(v => v.split('='))
+// .map(([k, ...vs]) => [k,vs.join('=')])
+// .reduce((acc, [k, v]) =>{
+//     acc[k.trim()] = decodeURIComponent(v);
+//     return acc;
+// }, {});
+
+// http.createServer((req, res)=>{
+//     const cookies = parseCookies(req.headers.cookie);
+//     if(req.url.startsWith('/login')){
+//         const { query } = url.parse(req.url); 
+//         const { name } = qs.parse(query);
+
+//         const expires = new Date();
+//         expires.setMinutes(expires.getMinutes() + 5); 
+
+//         res.writeHead(302, {
+//             Location:'/',
+//             'Set-Cookie':`name=${encodeURIComponent(name)}; Expires=${expires.toGMTString()}; HttpOnly; Path=/`,}); //백틱은 개행하는거 아니다.
+//         res.end();
+//     } else if(cookies.name){
+//         res.writeHead(200, {'Content-Type': 'text/html; charset=utf-8'});
+//         res.end(`${cookies.name}님 안녕하세요`);
+//     } else{
+//         fs.readFile('./server.html', (err, data)=>{
+//             if(err){
+//                 throw err;
+//             }
+//             res.end(data);
+//         });
+//     }
+//     }).listen(8083, ()=>{
+
+//         console.log('8083으로 쿠키 & 서버가 실행 중 입니다.');
+//     });
+
+
+
+//*********************************************************************** */
+//*********************************************************************** */
+//*********************************************************************** */
+
+
+
+
+
+    
+
+
+
+
+
+
 //****************************************************************************************************** */
 //****************************************************************************************************** */
 //****************************************************************************************************** */
